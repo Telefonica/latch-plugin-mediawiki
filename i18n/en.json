@@ -1,0 +1,17 @@
+{
+    "@metadata": {
+        "authors": []
+    },
+    "latchconf": " LatchConf",
+	"latch-setup": "Set up Latch",
+    "latch-enter": "Send",
+    "latch-app_id": "App_ID ",
+	"latch-secret": "Secret ",
+	"latch-parameter1-entered": " Information successfully sent. Now you can go to Preferences and Pair your Latch account!",
+	"latch-error-appid": " App_ID field can't be empty or have extrange characters. Allowed characters are [0-9],[a-z],[A-Z].",
+	"latch-error-secret": "  Secret field can't be empty or have extrange characters. Allowed characters are [0-9],[a-z],[A-Z].",
+    "latch-desc": "Adds a [[Special:Latch|special page]] to add a Latch protection to your account (need ''admin'' right)",
+	"latchpair": "Pair Latch",
+	"latchunpair": "Unpair Latch",
+	"latch-token": "Enter your Latch Token"
+}

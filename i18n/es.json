@@ -1,0 +1,17 @@
+{
+    "@metadata": {
+        "authors": []
+    },
+    "latchconf": " LatchConf",
+	"latch-setup": "Configurar Latch",
+    "latch-enter": "Enviar",
+    "latch-app_id": "App_ID ",
+	"latch-secret": "Secret ",
+	"latch-parameter1-entered": " Información enviada correctamente. ¡Ahora ya puedes configurar Latch desde la sección de Preferencias!",
+	"latch-error-appid": " El campo App_ID no puede ser vacío ni tener caracteres extraños. Los caracteres permitidos son [0-9],[a-z],[A-Z].",
+	"latch-error-secret": "  El campo Secret no puede ser vacío ni tener caracteres extraños. Los caracteres permitidos son [0-9],[a-z],[A-Z].",
+    "latch-desc": "Añade una [[Special:Latch|special page]] para añadir la protección de Latch a tu cuenta (necesita permisos de administrador)",
+	"latchpair": "Parear Latch",
+	"latchunpair": "Desparear Latch",
+	"latch-token": "Introduce el token de Latch"
+}
