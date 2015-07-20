@@ -2,9 +2,9 @@
 $specialPageAliases = array();
 # English
 $specialPageAliases['en'] = array(
-	'LatchConf' => array( 'LatchConf', 'LatchConf' ),
+	'LatchConf' => array( 'LatchConf', 'Latch Configuration' ),
 );
-# Deutsch
-$specialPageAliases['de'] = array(
-'MyExtension' => array( 'MeineErweiterung', 'Meine Erweiterung' ),
+# Español
+$specialPageAliases['es'] = array(
+	'LatchConf' => array( 'LatchConf', 'Configuración de Latch' ),
 );

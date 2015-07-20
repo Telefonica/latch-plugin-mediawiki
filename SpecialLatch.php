@@ -1,9 +1,10 @@
 <?php
 
 # Including Latch SDK
-require_once("latch/Latch.php");
-require_once("latch/LatchResponse.php");
-require_once("latch/Error.php");
+require_once("SDK/Latch.php");
+require_once("SDK/LatchResponse.php");
+require_once("SDK/Error.php");
+
 
 class SpecialLatch extends SpecialPage {
 	function __construct() { parent::__construct( 'LatchConf', 'editinterface' ); } # Adding editinterface allows only admins to see Latch in Special pages.
@@ -28,15 +29,17 @@ class SpecialLatch extends SpecialPage {
 	}
 	
 	# Function to get user_id and account_id from DB. Notice that there will be only one row for each user.
-	function accDB_useraccid ($user, &$user_id, &$acc_id) {
+	function accDB_useraccid ($user, &$user_id, &$acc_id, &$otp = null, &$att = 0) {
 		$dbr = wfGetDB( DB_SLAVE );
 		$dbr->begin();
 		$res=$dbr->select('latch',
-		array( 'user_id', 'acc_id' ),
-		array ('user_id' => $user->getId()));
+		array( 'user_id', 'acc_id', 'otp', 'attempts' ),
+		array ('user_id' => $user));
 		foreach( $res as $row ) {
 			$user_id = $row->user_id;	
 			$acc_id = $row->acc_id;
+			$otp = $row->otp;
+			$att = $row->attempts;
 		}
 	}
 	
@@ -53,6 +56,17 @@ class SpecialLatch extends SpecialPage {
 		$dbw = wfGetDB( DB_MASTER );
 		$dbw->begin();
 		$dbw->delete('latch', array( 'user_id' => $user->getId()));
+		$dbw->commit();
+	}
+	
+	# Function to update user_id and account_id in DB.
+	function updDB_useraccid ($user, $accountId, $otp = null, $attempts = 0) {
+		$dbw = wfGetDB( DB_MASTER );
+		$dbw->begin();
+		$dbw->update('latch', #Table
+					array( 'user_id' => $user , 'acc_id' => $accountId, 'otp' => $otp, 'attempts' => $attempts),	# Set
+					array( 'user_id' => $user, 'acc_id' => $accountId)  # Where
+					);
 		$dbw->commit();
 	}
 		
@@ -216,15 +230,13 @@ class SpecialLatch extends SpecialPage {
 		global $wgUser, $wgRequest, $wgOut;
 		$user_id = "";
 		$acc_id = "";
-		$msg = "";
 		$app_id = "";
 		$secret = "";
 		$pairResponse=null;
-		$hola = true;			
 					
 		# If app_id, secret, user_id and the account_id are already in the DB, we take them
 		SpecialLatch::accDB_appsecret ($app_id, $secret);
-		SpecialLatch::accDB_useraccid ($wgUser, $user_id, $acc_id);
+		SpecialLatch::accDB_useraccid ($wgUser->getId(), $user_id, $acc_id);
 		
 		# We create a new Latch object from the Latch SDK
 		$api = new Latch($app_id, $secret);
@@ -240,14 +252,12 @@ class SpecialLatch extends SpecialPage {
 			}
 			else {
 				$pair_token = $wgRequest->getText('latchTok');
-				if ((empty($pair_token)) || (ereg('[[:punct:]]', $pair_token))) {
-					$hola = false;
-					$msg = wfMsg('latch-error-appid');
-				}
+				# Not empty or extrange characters
+				if ((empty($pair_token)) || (ereg('[[:punct:]]', $pair_token))) 
+					throw new DBExpectedError( null, wfMsg('latch-error-pair'));
 				else {
 					$pairResponse = $api->pair($pair_token);
 					$responseData = $pairResponse->getData();
-
 					if (!empty($responseData)) 
 						$accountId = $responseData->{"accountId"};
 					# If everything is OK, we insert the data in the DB
@@ -264,15 +274,13 @@ class SpecialLatch extends SpecialPage {
 		}
 		# If the Unpair button is pressed, we try to unpair the account
 		if ( $wgRequest->getCheck('latchUnpair')) {
-			SpecialLatch::accDB_useraccid ($wgUser, $user_id, $acc_id);
-			
+			SpecialLatch::accDB_useraccid ($wgUser->getId(), $user_id, $acc_id);
 			# CSRF protection
 			if (!$wgUser->matchEditToken($wgRequest->getVal('hiddToken'))) {
 				return;
 			}
 			else {
 				$pairResponse = $api->unpair($acc_id);
-
 				# If Account ID is empty and no error fields are found, there are problems with the connection to the server
 				if ($pairResponse->getError() == NULL) 
 					SpecialLatch::delDB_useraccid($wgUser);
@@ -286,22 +294,25 @@ class SpecialLatch extends SpecialPage {
 		# Required return value of a hook function.
 		return true;
 	}	
-	
+		
 	# Hook that is going to run after a successful login
 	public static function wfLoginHook( &$returnTo, &$returnToQuery, &$type ) {
-		global $wgUser, $wgOut;
-		
-		$user_id = "";
+		global $wgUser, $wgOut, $wgRequest, $wgTitle;
 		$acc_id = "";
 		$msg = "";
 		$app_id = "";
 		$secret = "";
 		$type = 'error';
-		
+		$two_factor_token = "";
+		$user_id = "";
+
+		# We remove the user's name to "freeze" the session
+		$wgRequest->setSessionData( 'wsUserName', "" );
+	
 		# If app_id, secret, user_id and the account_id are already in the DB, we take them
 		SpecialLatch::accDB_appsecret ($app_id, $secret);
-		SpecialLatch::accDB_useraccid ($wgUser, $user_id, $acc_id);
-		
+		SpecialLatch::accDB_useraccid ($wgUser->getId(), $user_id, $acc_id);
+
 		# If the user doesn't have Latch configured we redirect him to Main Page without checking anything
 		if (!empty($user_id) && !empty($acc_id)) {
 			# We call the Status function from the Latch SDK		
@@ -309,20 +320,46 @@ class SpecialLatch extends SpecialPage {
 			$statusResponse = $api->status($acc_id);
 			$responseData = $statusResponse->getData();
 			$responseError = $statusResponse->getError();
-		
-			# If everything is OK and the status is on, we redirect the user to the main page
-			if (!empty($responseData) && $responseData->{"operations"}->{$app_id}->{"status"} === "on") 
-				$wgOut->redirect("/mediawiki/index.php/Main_Page");
-			# Otherwise we logout the user and we show the same message that when a wrong password is used
-			else {
-				$wgUser->logout();
-				$specialUserlogin = new LoginForm();
-				$specialUserlogin->load();
-				$specialUserlogin->mainLoginForm( $specialUserlogin->msg(wfMsg('wrongpassword')));
+			
+			if (empty($statusResponse) || (empty($responseData) && empty($responseError))) {
+				return false;
+			} else {
+				# If everything is OK and the status is on, we redirect the user to the main page and set the user's name again
+				if (!empty($responseData) && $responseData->{"operations"}->{$app_id}->{"status"} === "on") {
+					if	(!empty($responseData->{"operations"}->{$app_id}->{"two_factor"})) {
+						$two_factor_token = $responseData->{"operations"}->{$app_id}->{"two_factor"}->{"token"};
+						# We have another special page for the OTP page. We insert the OTP token on DB and we redirect to that page
+						if (!empty($two_factor_token)) {
+							SpecialLatch::updDB_useraccid ($user_id, $acc_id, $two_factor_token);
+							$wgOut->redirect(
+								SpecialPage::getTitleFor( 'LatchOTP' )
+								->getFullURL( '', false, PROTO_CURRENT )
+							);	
+						}
+					}
+					# If the status is on and there's no two factor, we redirect to the main page and set the correct user name.
+					else {
+						$wgRequest->setSessionData( 'wsUserName', $wgUser->whoIs($user_id) );
+						$wgOut->redirect('/mediawiki/index.php/Main_Page');
+					}
+				}
+				# Otherwise we logout the user and we show the same message that when a wrong password is used
+				else {
+					$wgUser->logout();
+					$specialUserlogin = new LoginForm();
+					$specialUserlogin->load();
+					$error = $specialUserlogin->mAbortLoginErrorMsg ?: 'wrongpassword';
+					$specialUserlogin->mainLoginForm( $specialUserlogin->msg( $error )->text() );
+				}
 			}
 		}
-		else 
-			$wgOut->redirect("/mediawiki/index.php/Main_Page");
+		else {
+			$wgRequest->setSessionData( 'wsUserName', $wgUser->whoIs($wgUser->getId()) );
+			$wgOut->redirect('/mediawiki/index.php/Main_Page');
+		}
 		return true;
 	}
+	
+	
+	
 }
