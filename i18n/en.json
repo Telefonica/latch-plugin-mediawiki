@@ -17,5 +17,11 @@
 	"latchunpair": "Unpair Latch",
 	"latch-token": "Enter your Latch Token",
 	"latch-OTP": "Enter OTP",
-	"latch-OTP-error" : " Wrong OTP, remember that you only have 3 attempts"
+	"latch-OTP-error" : " Wrong OTP, remember that you only have 3 attempts",
+	"201-unpair": "Account not paired",
+	"error-unpair": "Error unpairing account",
+	"error-401": "Missing parameter in API call",
+	"default-error-pair": "Latch pairing error: Cannot connect to the server.",
+	"205-pair": "Account and application already paired",
+	"206-pair": "Pairing token not found or expired"
 }

@@ -60,7 +60,7 @@ class SpecialLatch extends SpecialPage {
 	}
 	
 	# Function to update user_id and account_id in DB.
-	function updDB_useraccid ($user, $accountId, $otp = null, $attempts = 0) {
+	function updDB_useraccid ($user, $accountId, $otp = "", $attempts = 0) {
 		$dbw = wfGetDB( DB_MASTER );
 		$dbw->begin();
 		$dbw->update('latch', #Table
@@ -147,8 +147,7 @@ class SpecialLatch extends SpecialPage {
 				'section' => 'personal/info',
 				'name' => 'latchTokBot',
 				'maxlength' => 6,
-				'size' => 5,
-				'token' => $user->getEditToken()
+				'size' => 5
 			);		
 		}
 		# If the user has an account_id we only show him the option to unpair
@@ -160,8 +159,7 @@ class SpecialLatch extends SpecialPage {
 				'section' => 'personal/info',
 				'name' => 'latchUnpair',
 				'maxlength' => 6,
-				'size' => 5,
-				'token' => $user->getEditToken()
+				'size' => 5
 			);	
 		}
 		# Additional field for CSRF protection
@@ -173,6 +171,13 @@ class SpecialLatch extends SpecialPage {
 			'maxlength' => 0,
 			'size' => 0
 		);
+	}
+	
+	# Function to set the user in the session and redirect to the main page
+	function putUserInSession() {
+		global $wgUser, $wgRequest, $wgOut;
+		$wgRequest->setSessionData( 'wsUserName', $wgUser->whoIs($wgUser->getId()) );
+		$wgOut->redirect('/mediawiki/index.php/Main_Page');
 	}
 	
 	################################################################################################################################################
@@ -205,15 +210,21 @@ class SpecialLatch extends SpecialPage {
 				$par_appid = $wgRequest->getText( 'txt_appid' );
 				$par_secret = $wgRequest->getText( 'txt_secret' );
 				# App_id or secret can't be null or have extrange characters
-				if ((empty($par_appid)) || (ereg('[[:punct:]]', $par_appid))) $msg = wfMsg('latch-error-appid');
-				else if ((empty($par_secret)) || (ereg('[[:punct:]]', $par_secret))) $msg = wfMsg('latch-error-secret');
+				if ((empty($par_appid)) || (ereg('[[:punct:]]', $par_appid))) {
+					$msg = wfMsg('latch-error-appid');
+				}
+				else if ((empty($par_secret)) || (ereg('[[:punct:]]', $par_secret))) {
+					$msg = wfMsg('latch-error-secret');
+				} 
 				else {
 					# If app_id/secret weren't in the DB and we insert them 
-					if (empty($app_id) and empty($secret)) 
+					if (empty($app_id) and empty($secret)) {
 						$this->insDB_appsecret($par_appid,$par_secret);
+					}
 					# Otherwise we update those values
-					else 
+					else {
 						$this->updDB_appsecret($app_id, $secret, $par_appid,$par_secret);
+					}
 					# A message of the successful changes is printed
 					$msg = wfMsg( 'latch-parameter1-entered');
 				}
@@ -221,8 +232,9 @@ class SpecialLatch extends SpecialPage {
 			$this->draw_cnfig($par_appid, $par_secret, $wgRequest, $msg);
 		}
 		# If the user didn't press any button, we print the form anyway
-		else
-			$this->draw_cnfig($app_id, $secret, $wgRequest, $msg);		
+		else {
+			$this->draw_cnfig($app_id, $secret, $wgRequest, $msg);	
+		}	
 	}
 	
 	# Function to include Latch in user's preferences page
@@ -232,6 +244,7 @@ class SpecialLatch extends SpecialPage {
 		$acc_id = "";
 		$app_id = "";
 		$secret = "";
+		$error_msg = "";
 		$pairResponse=null;
 					
 		# If app_id, secret, user_id and the account_id are already in the DB, we take them
@@ -253,22 +266,41 @@ class SpecialLatch extends SpecialPage {
 			else {
 				$pair_token = $wgRequest->getText('latchTok');
 				# Not empty or extrange characters
-				if ((empty($pair_token)) || (ereg('[[:punct:]]', $pair_token))) 
+				if ((empty($pair_token)) || (ereg('[[:punct:]]', $pair_token))) {
 					throw new DBExpectedError( null, wfMsg('latch-error-pair'));
+				}
 				else {
 					$pairResponse = $api->pair($pair_token);
 					$responseData = $pairResponse->getData();
-					if (!empty($responseData)) 
+					if (!empty($responseData)) {
 						$accountId = $responseData->{"accountId"};
+					}
 					# If everything is OK, we insert the data in the DB
-					if (!empty($accountId)) 
+					if (!empty($accountId)) {
 						SpecialLatch::insDB_useraccid($wgUser, $accountId);
-					elseif ($pairResponse->getError() == NULL) 
-						# If Account ID is empty and no error fields are found, there are problems with the connection to the server
-						throw new DBExpectedError( null, 'Latch pairing error: Cannot connect to the server.');
-					else 
-						# Controlled errors
-						throw new DBExpectedError( null, $pairResponse->getError()->getCode() . " - " . $pairResponse->getError()->getMessage());
+					}
+					# If Account ID is empty and no error fields are found, there are problems with the connection to the server
+					elseif ($pairResponse->getError() == NULL) {
+						throw new DBExpectedError( null, wfMsg('default-error-pair'));
+					}
+					# Controlled errors
+					else {
+						switch ($pairResponse->getError()->getCode()) {
+						case "205":
+							$error_msg = wfMsg('205-pair');
+						break;
+						case "206":
+							$error_msg = wfMsg('206-pair');
+						break;
+						case "401":
+							$error_msg = wfMsg('error-401');
+						break;
+						default:
+							$error_msg = wfMsg('default-error-pair');
+						break;
+					}
+					throw new DBExpectedError( null, $pairResponse->getError()->getCode() . " - " . $error_msg);
+					}	
 				}
 			}
 		}
@@ -282,11 +314,24 @@ class SpecialLatch extends SpecialPage {
 			else {
 				$pairResponse = $api->unpair($acc_id);
 				# If Account ID is empty and no error fields are found, there are problems with the connection to the server
-				if ($pairResponse->getError() == NULL) 
+				if ($pairResponse->getError() == NULL) {
 					SpecialLatch::delDB_useraccid($wgUser);
+				}	
 				# Controlled errors
-				else 
-					throw new DBExpectedError( null, $pairResponse->getError()->getCode() . " - " . $pairResponse->getError()->getMessage());
+				else {
+					switch ($pairResponse->getError()->getCode()) {
+						case "201":
+							$error_msg = wfMsg('201-unpair');
+						break;
+						case "401":
+							$error_msg = wfMsg('error-401');
+						break;
+						default:
+							$error_msg = wfMsg('error-unpair');
+						break;
+					}
+					throw new DBExpectedError( null, $pairResponse->getError()->getCode() . " - " . $error_msg);
+				}
 			}
 		}
 		# We print the Latch preferences again to make sure that nothing strange happens
@@ -323,7 +368,8 @@ class SpecialLatch extends SpecialPage {
 			
 			if (empty($statusResponse) || (empty($responseData) && empty($responseError))) {
 				return false;
-			} else {
+			} 
+			else {
 				# If everything is OK and the status is on, we redirect the user to the main page and set the user's name again
 				if (!empty($responseData) && $responseData->{"operations"}->{$app_id}->{"status"} === "on") {
 					if	(!empty($responseData->{"operations"}->{$app_id}->{"two_factor"})) {
@@ -339,27 +385,27 @@ class SpecialLatch extends SpecialPage {
 					}
 					# If the status is on and there's no two factor, we redirect to the main page and set the correct user name.
 					else {
-						$wgRequest->setSessionData( 'wsUserName', $wgUser->whoIs($user_id) );
-						$wgOut->redirect('/mediawiki/index.php/Main_Page');
+						SpecialLatch::putUserInSession();
 					}
 				}
-				# Otherwise we logout the user and we show the same message that when a wrong password is used
-				else {
+				# If the status is off, we logout the user and we show the same message that when a wrong password is used
+				else if (!empty($responseData) && $responseData->{"operations"}->{$app_id}->{"status"} === "off") {
 					$wgUser->logout();
 					$specialUserlogin = new LoginForm();
 					$specialUserlogin->load();
 					$error = $specialUserlogin->mAbortLoginErrorMsg ?: 'wrongpassword';
 					$specialUserlogin->mainLoginForm( $specialUserlogin->msg( $error )->text() );
 				}
+				# Otherwise we login normally
+				else {
+					SpecialLatch::putUserInSession();
+				}
 			}
 		}
 		else {
-			$wgRequest->setSessionData( 'wsUserName', $wgUser->whoIs($wgUser->getId()) );
-			$wgOut->redirect('/mediawiki/index.php/Main_Page');
+			SpecialLatch::putUserInSession();
 		}
 		return true;
 	}
-	
-	
-	
+
 }

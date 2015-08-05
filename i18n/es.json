@@ -17,5 +17,11 @@
 	"latchunpair": "Desparear Latch",
 	"latch-token": "Introduce el token de Latch",
 	"latch-OTP": " Introduce OTP ",
-	"latch-OTP-error" : " OTP incorrecto, recuerda que sólo tienes 3 intentos "
+	"latch-OTP-error" : " OTP incorrecto, recuerda que sólo tienes 3 intentos ",
+	"201-unpair": "Cuenta no pareada",
+	"error-unpair": "Error despareando cuenta",
+	"error-401": "Falta algún parámetro en la llamada a la API",
+	"default-error-pair": "Error pareando Latch: Imposible conectar con el servidor.",
+	"205-pair": "Cuenta y aplicación ya pareadas",
+	"206-pair": "Token de pareado no encontrado o expirado"
 }
