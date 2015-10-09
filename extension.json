@@ -1,0 +1,20 @@
+{
+	"name": "LatchConf",
+	"author": [
+		"Eleven Paths"
+	],
+	"descriptionmsg": "Latch-desc",
+	"license-name": "GPL-2.0+",
+	"type": "parserhook",
+	"LogTypes": [
+		"renameuser"
+	],
+	"MessagesDirs": {
+		"Latch": [
+			"i18n"
+		]
+	},
+	"SpecialPages": {
+		"Latch": "SpecialLatch"
+	}
+}
