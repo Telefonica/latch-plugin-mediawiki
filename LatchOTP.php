@@ -6,11 +6,6 @@ class SpecialLatchOTP extends SpecialPage {
 	# Main function
 	function execute( $par ) {	
 		global $wgRequest, $wgUser;
-		# Limit access to non-admin users via url
-		if (empty($wgRequest->getSessionData( 'wsUserID' ))) {
-			$this->displayRestrictionError();
-			return;
-		}
 		$two_factor_token = "";
 		# We take user name and user id from the current session
 		$user_id = $wgRequest->getSessionData( 'wsUserID' );

@@ -9,6 +9,7 @@
     "latch-app_id": "App_ID ",
 	"latch-secret": "Secret ",
 	"latch-parameter1-entered": " Information successfully sent. Now you can go to Preferences and Pair your Latch account!",
+	"latch-error-appIdSecret": " The app_id or the secret are not correct",
 	"latch-error-appid": " App_ID field can't be empty or have extrange characters. Allowed characters are [0-9],[a-z],[A-Z].",
 	"latch-error-secret": "  Secret field can't be empty or have extrange characters. Allowed characters are [0-9],[a-z],[A-Z].",
 	"latch-error-pair": " Pair token field can't be empty or have extrange characters. Allowed characters are [0-9],[a-z],[A-Z].",
