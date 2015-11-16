@@ -9,6 +9,7 @@
     "latch-app_id": "App_ID ",
 	"latch-secret": "Secret ",
 	"latch-parameter1-entered": " Información enviada correctamente. ¡Ahora ya puedes configurar Latch desde la sección de Preferencias! ",
+	"latch-error-appIdSecret": " El app_id o el secreto no son correctos",
 	"latch-error-appid": " El campo App_ID no puede ser vacío ni tener caracteres extraños. Los caracteres permitidos son [0-9],[a-z],[A-Z]. ",
 	"latch-error-secret": "  El campo Secret no puede ser vacío ni tener caracteres extraños. Los caracteres permitidos son [0-9],[a-z],[A-Z]. ",
 	"latch-error-pair": " El campo token del pareado no puede ser vacío ni tener caracteres extraños. Los caracteres permitidos son [0-9],[a-z],[A-Z]. ",

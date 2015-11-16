@@ -217,6 +217,20 @@ class SpecialLatch extends SpecialPage {
 					$msg = wfMsg('latch-error-secret');
 				} 
 				else {
+					# We create a new Latch object from the Latch SDK
+					$api = new Latch($par_appid, $par_secret);
+					
+					# We try to make a call to the status function with the new values
+					$statusResponse = $api->status("");
+					$responseError = $statusResponse->getError();
+					
+					# If a 102 code is returned, then the app_id or the secret are not correct
+					if ($responseError->getCode() == 102) {
+						$msg = wfMsg( 'latch-error-appIdSecret');
+						$this->draw_cnfig($app_id, $secret, $wgRequest, $msg);	
+						return;
+					}
+					
 					# If app_id/secret weren't in the DB and we insert them 
 					if (empty($app_id) and empty($secret)) {
 						$this->insDB_appsecret($par_appid,$par_secret);
@@ -286,13 +300,13 @@ class SpecialLatch extends SpecialPage {
 					# Controlled errors
 					else {
 						switch ($pairResponse->getError()->getCode()) {
-						case "205":
+						case 205:
 							$error_msg = wfMsg('205-pair');
 						break;
-						case "206":
+						case 206:
 							$error_msg = wfMsg('206-pair');
 						break;
-						case "401":
+						case 401:
 							$error_msg = wfMsg('error-401');
 						break;
 						default:
@@ -320,10 +334,10 @@ class SpecialLatch extends SpecialPage {
 				# Controlled errors
 				else {
 					switch ($pairResponse->getError()->getCode()) {
-						case "201":
+						case 201:
 							$error_msg = wfMsg('201-unpair');
 						break;
-						case "401":
+						case 401:
 							$error_msg = wfMsg('error-401');
 						break;
 						default:
