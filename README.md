@@ -22,7 +22,11 @@ Also you can download the plugin by getting the executable from our GitHub repos
 
 ####INSTALLING THE PLUGIN IN MEDIAWIKI####
 
-Once the administrator has downloaded the plugin, it has to be added as a plugin adding these lines at the bottom of LocalSettings.php:
+Once the administrator has downloaded the plugin (the folder called "Latch") and placed it the path:
+
+/your_path/mediawiki/extensions/
+
+ it has to be added as a plugin adding these lines at the bottom of LocalSettings.php:
 ~~~
 	require_once "extensions/Latch/LatchConf.php";
     require_once "extensions/Latch/LatchOTP.php";
@@ -39,7 +43,7 @@ your_host/mediawiki/mw-config/
 
 and configure the installation.
 
-Now go to "Special Pages" and click on "LatchConf", introduce the "Application ID" and "Secret" previously obtained and save the changes.
+Now login as admin and go to "Special Pages" and click on "LatchConf", introduce the "Application ID" and "Secret" previously obtained and save the changes.
 
 From now on, on user's preferences, a new section about Latch will appear. Tokens generated in the app should be introduced there.
 
