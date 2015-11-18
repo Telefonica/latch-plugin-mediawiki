@@ -6,7 +6,7 @@
 
 PHP version 5.3.2 or later.
 
-Jira version 1.25.1 or later.
+Mediawiki version 1.25.1 or later.
 
 To get the "Application ID" and "Secret", (fundamental values for integrating Latch in any application), it’s necessary to register a developer account in Latch's website. On the upper right side, click on "Developer area".
 
