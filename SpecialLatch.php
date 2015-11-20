@@ -29,7 +29,7 @@ class SpecialLatch extends SpecialPage {
 	}
 	
 	# Function to get user_id and account_id from DB. Notice that there will be only one row for each user.
-	function accDB_useraccid ($user, &$user_id, &$acc_id, &$otp = null, &$att = 0) {
+	static function accDB_useraccid ($user, &$user_id, &$acc_id, &$otp = null, &$att = 0) {
 		$dbr = wfGetDB( DB_SLAVE );
 		$dbr->begin();
 		$res=$dbr->select('latch',
@@ -44,7 +44,7 @@ class SpecialLatch extends SpecialPage {
 	}
 	
 	# Function to insert user_id and account_id in DB.
-	function insDB_useraccid ($user, $accountId) {
+	static function insDB_useraccid ($user, $accountId) {
 		$dbw = wfGetDB( DB_MASTER );
 		$dbw->begin();
 		$dbw->insert('latch', array( 'user_id' => $user->getId() , 'acc_id' => $accountId));
@@ -52,7 +52,7 @@ class SpecialLatch extends SpecialPage {
 	}
 	
 	# Function to delete user_id and account_id of the DB.
-	function delDB_useraccid ($user) {
+	static function delDB_useraccid ($user) {
 		$dbw = wfGetDB( DB_MASTER );
 		$dbw->begin();
 		$dbw->delete('latch', array( 'user_id' => $user->getId()));
@@ -60,7 +60,7 @@ class SpecialLatch extends SpecialPage {
 	}
 	
 	# Function to update user_id and account_id in DB.
-	function updDB_useraccid ($user, $accountId, $otp = "", $attempts = 0) {
+	static function updDB_useraccid ($user, $accountId, $otp = "", $attempts = 0) {
 		$dbw = wfGetDB( DB_MASTER );
 		$dbw->begin();
 		$dbw->update('latch', #Table
@@ -71,7 +71,7 @@ class SpecialLatch extends SpecialPage {
 	}
 		
 	# Function to get app_id and secret from DB. Notice that there will be only one row on that table.
-	function accDB_appsecret (&$app_id, &$secret) {
+	static function accDB_appsecret (&$app_id, &$secret) {
 		$dbr = wfGetDB( DB_SLAVE );
 		$dbr->begin();
 		$res=$dbr->select('latch_conf',
@@ -128,7 +128,7 @@ class SpecialLatch extends SpecialPage {
 	}
 	
 	# Function used to print the modified user preferences
-	function drawUserPreferences ($acc_id, $user, &$preferences) {
+	static function drawUserPreferences ($acc_id, $user, &$preferences) {
 		# If the user doesn't have already an account_id we ask for it
 		if (empty($acc_id)) {
 			# A textBox to ask for the Latch token
@@ -174,10 +174,12 @@ class SpecialLatch extends SpecialPage {
 	}
 	
 	# Function to set the user in the session and redirect to the main page
-	function putUserInSession() {
+	static function putUserInSession() {
 		global $wgUser, $wgRequest, $wgOut;
 		$wgRequest->setSessionData( 'wsUserName', $wgUser->whoIs($wgUser->getId()) );
-		$wgOut->redirect('/mediawiki/index.php/Main_Page');
+		$fullURL = $wgRequest->getRequestURL();
+		$urlMainPage = explode("?", $fullURL);
+		$wgOut->redirect($urlMainPage[0]);
 	}
 	
 	################################################################################################################################################
@@ -210,10 +212,10 @@ class SpecialLatch extends SpecialPage {
 				$par_appid = $wgRequest->getText( 'txt_appid' );
 				$par_secret = $wgRequest->getText( 'txt_secret' );
 				# App_id or secret can't be null or have extrange characters
-				if ((empty($par_appid)) || (ereg('[[:punct:]]', $par_appid))) {
+				if ((empty($par_appid)) || (preg_match('/\.([^\.]*$)/', $par_appid))) {
 					$msg = wfMsg('latch-error-appid');
 				}
-				else if ((empty($par_secret)) || (ereg('[[:punct:]]', $par_secret))) {
+				else if ((empty($par_secret)) || (preg_match('/\.([^\.]*$)/', $par_secret))) {
 					$msg = wfMsg('latch-error-secret');
 				} 
 				else {
@@ -252,7 +254,7 @@ class SpecialLatch extends SpecialPage {
 	}
 	
 	# Function to include Latch in user's preferences page
-	function wfPrefHook($user, &$preferences) {
+	static function wfPrefHook($user, &$preferences) {
 		global $wgUser, $wgRequest, $wgOut;
 		$user_id = "";
 		$acc_id = "";
@@ -280,7 +282,7 @@ class SpecialLatch extends SpecialPage {
 			else {
 				$pair_token = $wgRequest->getText('latchTok');
 				# Not empty or extrange characters
-				if ((empty($pair_token)) || (ereg('[[:punct:]]', $pair_token))) {
+				if ((empty($pair_token)) || (preg_match('/\.([^\.]*$)/', $pair_token))) {
 					throw new DBExpectedError( null, wfMsg('latch-error-pair'));
 				}
 				else {
