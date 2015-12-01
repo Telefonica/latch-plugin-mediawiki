@@ -43,7 +43,9 @@ class SpecialLatchOTP extends SpecialPage {
 				# If it's correct we set again the correct user name to session and redirect to the main page
 				if ($otp_DB == $wgRequest->getText('txt_OTP')) {
 					$wgRequest->setSessionData( 'wsUserName', $user_name );
-					$wgOut->redirect('/mediawiki/index.php/Main_Page');
+					$fullURL = $wgRequest->getRequestURL();
+					$urlMainPage = explode("?", $fullURL);
+					$wgOut->redirect($urlMainPage[0]);
 				}
 				# updates the DB if the attempts are lower than 0 and show a warning message
 				else if ( $attempts < 2) {
